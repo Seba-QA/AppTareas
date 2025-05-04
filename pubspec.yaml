@@ -1,0 +1,29 @@
+name: apptareas
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  sqflite: ^2.3.0 # Manejo de base de datos SQLite
+  path: ^1.9.0    # Para manejar rutas de archivos (bases de datos locales)
+  path_provider: ^2.1.2 # Para obtener la ruta donde guardar la base de datos
+  uuid: ^4.2.1 # Para generar IDs únicos
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+
+  uses-material-design: true
+
