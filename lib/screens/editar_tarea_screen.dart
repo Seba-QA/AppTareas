@@ -44,17 +44,17 @@ class _EditarTareaScreenState extends State<EditarTareaScreen> {
     final relaciones = await _dbHelper.getRelacionesTarea(tareaId);
 
     for (var relacion in relaciones) {
-      _diasSeleccionados.add(relacion.diaSemanaId);
+      _diasSeleccionados.add(relacion.diaSemanaId.toString());
 
       final partesInicio = relacion.horaInicio.split(':');
       final partesTermino = relacion.horaTermino.split(':');
 
-      _horaInicio[relacion.diaSemanaId] = TimeOfDay(
+      _horaInicio[relacion.diaSemanaId.toString()] = TimeOfDay(
         hour: int.tryParse(partesInicio[0]) ?? 0,
         minute: int.tryParse(partesInicio[1]) ?? 0,
       );
 
-      _horaTermino[relacion.diaSemanaId] = TimeOfDay(
+      _horaTermino[relacion.diaSemanaId.toString()] = TimeOfDay(
         hour: int.tryParse(partesTermino[0]) ?? 0,
         minute: int.tryParse(partesTermino[1]) ?? 0,
       );
@@ -72,8 +72,8 @@ class _EditarTareaScreenState extends State<EditarTareaScreen> {
       prioridad: _prioridad,
     );
 
-    await _dbHelper.actualizarTarea(tareaActualizada);
-    //await _dbHelper.eliminarRelacionesTarea(widget.tarea.id);
+    await _dbHelper.updateTarea(tareaActualizada);
+    await _dbHelper.deleteRelacionesTarea(widget.tarea.id);
 
     for (var dia in _diasSeleccionados) {
       final inicio = _horaInicio[dia];
@@ -81,13 +81,11 @@ class _EditarTareaScreenState extends State<EditarTareaScreen> {
 
       if (inicio != null && termino != null) {
         final relacion = TareaDia(
-          id: const Uuid().v4(),
-          tareaId: widget.tarea.id,
-          diaSemana: dia,
-          horaInicio: '${inicio.hour}:${inicio.minute.toString().padLeft(2, '0')}',
-          horaTermino: '${termino.hour}:${termino.minute.toString().padLeft(2, '0')}',
-        );
-
+        tareaId: widget.tarea.id,
+        diaSemanaId: int.parse(dia), // ✅ Convertimos el String a int
+        horaInicio: '${inicio.hour}:${inicio.minute.toString().padLeft(2, '0')}',
+        horaTermino: '${termino.hour}:${termino.minute.toString().padLeft(2, '0')}',
+      );
         await _dbHelper.insertTareaDia(relacion);
       }
     }

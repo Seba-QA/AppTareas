@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/tarea.dart';
 import '../models/tarea_dia.dart';
+import '../screens/editar_tarea_screen.dart'; // Asegúrate de que el path sea correcto
 
 class DetalleTareaScreen extends StatelessWidget {
   final Tarea tarea;
@@ -74,6 +75,13 @@ class DetalleTareaScreen extends StatelessWidget {
                   icon: const Icon(Icons.edit, color: Colors.blue),
                   onPressed: () {
                     // Lógica para editar la tarea
+                    debugPrint('Botón editar presionado');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditarTareaScreen(tarea: tarea),
+                      ),
+                    );
                   },
                 ),
                 IconButton(

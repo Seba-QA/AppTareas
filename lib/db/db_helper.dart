@@ -202,6 +202,22 @@ class DatabaseHelper {
     return maps.map((mapa) => TareaDia.fromMap(mapa)).toList();
   }
 
+  /// Obtener la cantidad de tareas asociadas a un día específico
+  Future<int> getCantidadTareasPorDia(int diaId) async {
+    final db = await database;
+
+    // Consulta que cuenta las tareas relacionadas al día
+    final result = Sqflite.firstIntValue(
+      await db.rawQuery(
+        'SELECT COUNT(*) FROM tarea_dia WHERE diaSemanaId = ?',
+        [diaId],
+      ),
+    );
+
+    // Si no encuentra resultados, devuelve 0 por defecto
+    return result ?? 0;
+  }
+
   /// ------------------------------
   /// MÉTODOS DE ACTUALIZACIÓN (UPDATE)
   /// ------------------------------
@@ -265,19 +281,13 @@ class DatabaseHelper {
     );
   }
 
-  /// Obtener la cantidad de tareas asociadas a un día específico
-  Future<int> getCantidadTareasPorDia(int diaId) async {
+  Future<void> deleteRelacionesTarea(String tareaId) async {
     final db = await database;
-
-    // Consulta que cuenta las tareas relacionadas al día
-    final result = Sqflite.firstIntValue(
-      await db.rawQuery(
-        'SELECT COUNT(*) FROM tarea_dia WHERE diaSemanaId = ?',
-        [diaId],
-      ),
+    await db.delete(
+      'tarea_dia',
+      where: 'tareaId = ?',
+      whereArgs: [tareaId],
     );
-
-    // Si no encuentra resultados, devuelve 0 por defecto
-    return result ?? 0;
   }
+
 }

@@ -18,7 +18,7 @@ class _AgregarTareaScreenState extends State<AgregarTareaScreen> {
 
   final _tituloController = TextEditingController();
   final _descripcionController = TextEditingController();
-  String _etiqueta = '';
+  String _etiqueta = 'Sin etiqueta';
   String _prioridad = 'Baja';
 
   // Para manejar los días seleccionados
