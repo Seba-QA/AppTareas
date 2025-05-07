@@ -115,12 +115,12 @@ class _EditarTareaScreenState extends State<EditarTareaScreen> {
               ),
               const SizedBox(height: 16),
               const Text('Etiqueta:'),
-              DropdownButton<String>(
-                value: _etiqueta,
-                items: ['Personal', 'Trabajo', 'Estudio']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
-                onChanged: (value) => setState(() => _etiqueta = value!),
+              TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Ej: Personal, Trabajo, Estudio...',
+                ),
+                controller: TextEditingController(text: _etiqueta),
+                onChanged: (value) => _etiqueta = value,
               ),
               const SizedBox(height: 16),
               const Text('Prioridad:'),
