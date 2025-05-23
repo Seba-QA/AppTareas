@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import '../models/tarea.dart';
 import '../models/tarea_dia.dart';
 import '../screens/editar_tarea_screen.dart'; // Asegúrate de que el path sea correcto
+import '../db/db_helper.dart'; // Asegúrate de que el path sea correcto
 
 class DetalleTareaScreen extends StatelessWidget {
   final Tarea tarea;
   final TareaDia tareaDia; // Asegúrate de importar el modelo
+  final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  const DetalleTareaScreen({
+  DetalleTareaScreen({
     Key? key,
     required this.tarea,
     required this.tareaDia,
   }) : super(key: key);
+
 
   @override
   Widget build(BuildContext context) {
@@ -87,8 +90,35 @@ class DetalleTareaScreen extends StatelessWidget {
                 IconButton(
                   tooltip: 'Eliminar tarea',
                   icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
-                    // Lógica para eliminar la tarea
+                  onPressed: () async {
+                    final confirmacion = await showDialog<bool>(
+                      context: context,
+                      builder:
+                          (context) => AlertDialog(
+                            title: const Text('Confirmar eliminación'),
+                            content: const Text(
+                              '¿Estás seguro de que deseas eliminar esta tarea?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Eliminar'),
+                              ),
+                            ],
+                          ),
+                    );
+                    if (confirmacion == true) {
+                      await _dbHelper.eliminarTarea(tarea.id);
+                      if (context.mounted)
+                        Navigator.pop(
+                          context,
+                          true,
+                        ); // Volver a la pantalla anterior
+                    }
                   },
                 ),
               ],

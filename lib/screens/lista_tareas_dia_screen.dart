@@ -63,37 +63,44 @@ class _ListaTareasDiaScreenState extends State<ListaTareasDiaScreen> {
   /// Si cumple esa condición, se actualiza su estado a "No realizada".
   Future<void> _verificarYActualizarEstadoTareas(List<Tarea> tareas) async {
     final ahora = TimeOfDay.now();
+    final diaActual = DateTime.now().weekday;
 
     for (Tarea tarea in tareas) {
-      // Nos aseguramos de que la tarea no esté ya finalizada (ignoramos mayúsculas)
-      if (tarea.estado.toLowerCase() != 'finalizada') {
-        // Obtenemos todas las relaciones entre tarea y día
-        final relaciones = await _dbHelper.getRelacionesTarea(tarea.id);
+      // Verificamos si esta tarea pertenece al día actual
+      final relaciones = await _dbHelper.getRelacionesTarea(tarea.id);
+      final esTareaDeHoy = relaciones.any((r) => r.diaSemanaId == diaActual);
 
-        for (var relacion in relaciones) {
-          // Convertimos la hora de término de la tarea a TimeOfDay
-          final partes = relacion.horaTermino.split(':');
-          final hora = int.tryParse(partes[0]) ?? 0;
-          final minuto = int.tryParse(partes[1]) ?? 0;
-          final horaTermino = TimeOfDay(hour: hora, minute: minuto);
-          final horaFormateada =
-              '${horaTermino.hour}:${horaTermino.minute.toString().padLeft(2, '0')}';
+      if (!esTareaDeHoy) {
+        debugPrint('⏩ ${tarea.titulo} omitida (no es del día actual)');
+        continue;
+      }
 
-          final terminoPasado = _esHoraPasada(horaFormateada);
+      // Ya validamos que es del día actual y que no esté finalizada
+      if (tarea.estado.toLowerCase() == 'finalizada') continue;
 
-          debugPrint(
-            '⏱ Verificando ${tarea.titulo} -> Hora término: ${relacion.horaTermino}, '
-            'Ahora: ${ahora.format(context)}, ¿Pasó?: $terminoPasado',
-          );
+      for (var relacion in relaciones) {
+        if (relacion.diaSemanaId != diaActual) continue;
 
-          if (terminoPasado) {
-            // Si ya pasó la hora y la tarea no está finalizada, marcamos como "No realizado"
-            final tareaActualizada = tarea.copyWith(estado: 'No realizado');
-            await _dbHelper.actualizarEstadoTarea(tareaActualizada);
+        final partes = relacion.horaTermino.split(':');
+        final hora = int.tryParse(partes[0]) ?? 0;
+        final minuto = int.tryParse(partes[1]) ?? 0;
+        final horaTermino = TimeOfDay(hour: hora, minute: minuto);
+        final horaFormateada =
+            '${horaTermino.hour}:${horaTermino.minute.toString().padLeft(2, '0')}';
 
-            debugPrint('❌ Tarea ${tarea.titulo} marcada como NO REALIZADA');
-            break; // Solo una actualización por tarea
-          }
+        final terminoPasado = _esHoraPasada(horaFormateada);
+
+        debugPrint(
+          '⏱ Verificando ${tarea.titulo} -> Hora término: ${relacion.horaTermino}, '
+          'Ahora: ${ahora.format(context)}, ¿Pasó?: $terminoPasado',
+        );
+
+        if (terminoPasado) {
+          final tareaActualizada = tarea.copyWith(estado: 'No realizado');
+          await _dbHelper.actualizarEstadoTarea(tareaActualizada);
+
+          debugPrint('❌ Tarea ${tarea.titulo} marcada como NO REALIZADA');
+          break; // Solo una actualización por tarea
         }
       }
     }
@@ -114,17 +121,35 @@ class _ListaTareasDiaScreenState extends State<ListaTareasDiaScreen> {
     return false;
   }
 
-  /// Cambia el estado de una tarea a "Finalizada" y recarga la lista
+  /// Cambia el estado de una tarea a "Finalizada" y recarga la lista,
+  /// solo si la tarea pertenece al día actual.
   Future<void> _marcarComoFinalizada(Tarea tarea) async {
     // Evitamos actualizar si ya está finalizada
     if (tarea.estado.toLowerCase() == 'finalizada') return;
+
+    final diaActual = DateTime.now().weekday;
+
+    // Obtenemos relaciones de la tarea con los días
+    final relaciones = await _dbHelper.getRelacionesTarea(tarea.id);
+
+    // Verificamos si la tarea corresponde al día actual
+    final esTareaDeHoy = relaciones.any(
+      (relacion) => relacion.diaSemanaId == diaActual,
+    );
+
+    if (!esTareaDeHoy) {
+      debugPrint(
+        '🚫 No puedes marcar como finalizada: tarea no es del día actual (hoy: $diaActual)',
+      );
+      return;
+    }
 
     // Creamos una nueva instancia con el estado actualizado
     final tareaActualizada = tarea.copyWith(estado: 'Finalizada');
 
     // Agregamos un registro para depuración
     debugPrint(
-      'Actualizando tarea: ${tarea.id}, Estado: ${tarea.estado} -> Finalizada',
+      '✅ Actualizando tarea: ${tarea.id}, Estado: ${tarea.estado} -> Finalizada',
     );
 
     // Actualizamos en la base de datos
@@ -160,22 +185,34 @@ class _ListaTareasDiaScreenState extends State<ListaTareasDiaScreen> {
               return TaskTile(
                 tarea: tarea,
                 onTap: () async {
-                  final relaciones = await _dbHelper.getRelacionesTarea(tarea.id);
+                  final relaciones = await _dbHelper.getRelacionesTarea(
+                    tarea.id,
+                  );
                   if (relaciones.isNotEmpty) {
-                    final tareaDia = relaciones.first; // Por ahora usamos la primera coincidencia
-                    if (context.mounted) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DetalleTareaScreen(
-                            tarea: tarea,
-                            tareaDia: tareaDia,
-                          ),
-                        ),
-                      );
+                    final tareaDia =
+                        relaciones
+                            .first; // Por ahora usamos la primera coincidencia
+
+                    final resultado = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => DetalleTareaScreen(
+                              tarea: tarea,
+                              tareaDia: tareaDia,
+                            ),
+                      ),
+                    );
+
+                    if (resultado == true && mounted) {
+                      setState(() {
+                        _cargarTareas(); // Recargar lista si se editó o eliminó
+                      });
                     }
                   } else {
-                    debugPrint('⚠️ No se encontró relación tarea-dia para la tarea ${tarea.titulo}');
+                    debugPrint(
+                      '⚠️ No se encontró relación tarea-dia para la tarea ${tarea.titulo}',
+                    );
                   }
                 },
                 onEstadoTap: () => _marcarComoFinalizada(tarea),
