@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/tarea.dart';
 import '../models/tarea_dia.dart';
-import '../screens/editar_tarea_screen.dart'; // Asegúrate de que el path sea correcto
-import '../db/db_helper.dart'; // Asegúrate de que el path sea correcto
-
+import '../screens/editar_tarea_screen.dart';
+import '../db/db_helper.dart';
 class DetalleTareaScreen extends StatelessWidget {
   final Tarea tarea;
   final TareaDia tareaDia; // Asegúrate de importar el modelo
