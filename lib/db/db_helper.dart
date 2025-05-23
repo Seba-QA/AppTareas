@@ -293,6 +293,6 @@ class DatabaseHelper {
   Future<void> eliminarTarea(String tareaId) async {
     final db = await database;
     await db.delete('tarea_dia', where: 'tareaId = ?', whereArgs: [tareaId]);
-    await db.delete('tarea', where: 'id = ?', whereArgs: [tareaId]);
+    await db.delete('tareas', where: 'id = ?', whereArgs: [tareaId]);
   }
 }
