@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import '../db/db_helper.dart';
 import '../models/tarea.dart';
 import '../models/tarea_dia.dart';

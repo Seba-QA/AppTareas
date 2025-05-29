@@ -3,17 +3,14 @@ import '../models/tarea.dart';
 import '../models/tarea_dia.dart';
 import '../screens/editar_tarea_screen.dart';
 import '../db/db_helper.dart';
+
 class DetalleTareaScreen extends StatelessWidget {
   final Tarea tarea;
   final TareaDia tareaDia; // Asegúrate de importar el modelo
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  DetalleTareaScreen({
-    Key? key,
-    required this.tarea,
-    required this.tareaDia,
-  }) : super(key: key);
-
+  DetalleTareaScreen({Key? key, required this.tarea, required this.tareaDia})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +48,11 @@ class DetalleTareaScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               '🕓 Término: ${tareaDia.horaTermino}',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '🔔 Notificaciones activas: ${tarea.notificacion ? '✅' : '❌'}',
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 8),

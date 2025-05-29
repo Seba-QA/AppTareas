@@ -1,9 +1,14 @@
 import 'screens/home_screen.dart';
 import 'package:flutter/material.dart';
+import 'utils/notificaciones_helper.dart';
 
-void main() {
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Asegura que los bindings de Flutter estén inicializados antes de ejecutar la app
+  await NotificacionesHelper.inicializar(); // 🔔 Inicializa el sistema de notificaciones
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

@@ -4,6 +4,8 @@ import '../db/db_helper.dart';
 import '../models/tarea.dart';
 import '../models/tarea_dia.dart';
 import '../models/dia_semana.dart';
+import '../utils/notificaciones_helper.dart';
+
 
 class AgregarTareaScreen extends StatefulWidget {
   const AgregarTareaScreen({super.key});
@@ -39,57 +41,96 @@ class _AgregarTareaScreenState extends State<AgregarTareaScreen> {
     _diasSemanaFuture = _dbHelper.getDiasSemana();
   }
 
-  Future<void> _guardarTarea() async {
-    if (_formKey.currentState!.validate() && _diasSeleccionados.isNotEmpty) {
-      final idTarea = const Uuid().v4();
+Future<void> _guardarTarea() async {
+  if (_formKey.currentState!.validate() && _diasSeleccionados.isNotEmpty) {
+    final idTarea = const Uuid().v4();
 
-      final nuevaTarea = Tarea(
-        id: idTarea,
-        titulo: _tituloController.text,
-        descripcion: _descripcionController.text,
-        etiqueta: _etiqueta,
-        estado: 'No comenzado',
-        prioridad: _prioridad,
-        notificacion: true,
+    final nuevaTarea = Tarea(
+      id: idTarea,
+      titulo: _tituloController.text,
+      descripcion: _descripcionController.text,
+      etiqueta: _etiqueta,
+      estado: 'No comenzado',
+      prioridad: _prioridad,
+      notificacion: true,
+    );
+
+    await _dbHelper.insertTarea(nuevaTarea);
+
+    // Insertar en tarea_dia para cada día seleccionado
+    for (int diaId in _diasSeleccionados) {
+      TimeOfDay? horaInicio;
+      TimeOfDay? horaTermino;
+
+      if (_usarMismoHorario) {
+        horaInicio = _horaInicioComun;
+        horaTermino = _horaTerminoComun;
+      } else {
+        horaInicio = _horaInicioPorDia[diaId];
+        horaTermino = _horaTerminoPorDia[diaId];
+
+        if (horaInicio == null || horaTermino == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Debes asignar horario a todos los días seleccionados')),
+          );
+          return; // Detenemos el guardado
+        }
+      }
+
+      final nuevaRelacion = TareaDia(
+        tareaId: idTarea,
+        diaSemanaId: diaId,
+        horaInicio: '${horaInicio.hour}:${horaInicio.minute}',
+        horaTermino: '${horaTermino.hour}:${horaTermino.minute}',
       );
 
-      await _dbHelper.insertTarea(nuevaTarea);
+      await _dbHelper.insertTareaDia(nuevaRelacion);
 
-      // Insertar en tarea_dia para cada día seleccionado
-      for (int diaId in _diasSeleccionados) {
-        TimeOfDay? horaInicio;
-        TimeOfDay? horaTermino;
+      // === 🕑 NOTIFICACIONES ===
 
-        if (_usarMismoHorario) {
-          horaInicio = _horaInicioComun;
-          horaTermino = _horaTerminoComun;
-        } else {
-          horaInicio = _horaInicioPorDia[diaId];
-          horaTermino = _horaTerminoPorDia[diaId];
+      final ahora = DateTime.now();
+      final hoyDiaSemana = ahora.weekday; // 1 = lunes
+      final diferenciaDias = diaId - hoyDiaSemana;
+      final fechaTarea = ahora.add(Duration(days: diferenciaDias >= 0 ? diferenciaDias : diferenciaDias + 7));
 
-          if (horaInicio == null || horaTermino == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Debes asignar horario a todos los días seleccionados')),
-            );
-            return; // Detenemos el guardado
-          }
-        }
+      final inicioDateTime = DateTime(
+        fechaTarea.year,
+        fechaTarea.month,
+        fechaTarea.day,
+        horaInicio.hour,
+        horaInicio.minute,
+      ).subtract(const Duration(minutes: 5));
 
-        // Aquí creamos la nueva relación SIN pasar ID
-        final nuevaRelacion = TareaDia(
-          tareaId: idTarea,
-          diaSemanaId: diaId,
-          horaInicio: '${horaInicio.hour}:${horaInicio.minute}',
-          horaTermino: '${horaTermino.hour}:${horaTermino.minute}',
-        );
+      final terminoDateTime = DateTime(
+        fechaTarea.year,
+        fechaTarea.month,
+        fechaTarea.day,
+        horaTermino.hour,
+        horaTermino.minute,
+      ).subtract(const Duration(minutes: 10));
 
-        // Insertamos la relación
-        await _dbHelper.insertTareaDia(nuevaRelacion);
-      }
-      
-      Navigator.pop(context, true); // Volver indicando éxito
+      // ID base único para evitar colisiones
+      final baseId = const Uuid().v4().hashCode;
+
+      await NotificacionesHelper.programarNotificacion(
+        id: baseId,
+        titulo: '📌 Tarea próxima',
+        cuerpo: 'Tarea "${nuevaTarea.titulo}" comienza pronto.',
+        fechaHora: inicioDateTime,
+      );
+
+      await NotificacionesHelper.programarNotificacion(
+        id: baseId + 1,
+        titulo: '⚠️ No olvides tu tarea',
+        cuerpo: 'Tarea "${nuevaTarea.titulo}" está por finalizar.',
+        fechaHora: terminoDateTime,
+      );
     }
+
+    Navigator.pop(context, true); // Volver indicando éxito
   }
+}
+
 
   Future<void> _seleccionarHoraInicioComun() async {
     final picked = await showTimePicker(

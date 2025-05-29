@@ -16,7 +16,6 @@ class TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorPrioridad = _obtenerColorPrioridad(tarea.prioridad);
 
     return GestureDetector(
       onTap:

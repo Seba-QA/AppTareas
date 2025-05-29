@@ -16,6 +16,9 @@ dependencies:
   path: ^1.9.0    # Para manejar rutas de archivos (bases de datos locales)
   path_provider: ^2.1.2 # Para obtener la ruta donde guardar la base de datos
   uuid: ^4.2.1 # Para generar IDs únicos
+  flutter_local_notifications: 17.2.1 # Para notificaciones locales
+  timezone: ^0.9.2 # Para manejar zonas horarias
+
 
 dev_dependencies:
   flutter_test:
